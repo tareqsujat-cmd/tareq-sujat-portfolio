@@ -15,7 +15,12 @@ const isExternal = primary.startsWith("http");
 ---
 
 <article
-  class="group flex flex-col border-t border-rule py-6 sm:flex-row sm:items-baseline sm:gap-8"
+  class:list={[
+    "group grid grid-cols-1 border-t border-rule py-6 sm:items-center sm:gap-8",
+    data.image
+      ? "sm:grid-cols-[10rem_minmax(0,1fr)_12rem_auto]"
+      : "sm:grid-cols-[10rem_minmax(0,1fr)_auto]",
+  ]}
   data-reveal
 >
   <div class="mb-2 shrink-0 sm:mb-0 sm:w-40">
@@ -47,6 +52,20 @@ const isExternal = primary.startsWith("http");
       }
     </ul>
   </div>
+
+  {
+    data.image && (
+      <img
+        src={data.image.src}
+        alt={data.image.alt}
+        width="800"
+        height="450"
+        loading="lazy"
+        decoding="async"
+        class="mt-5 aspect-[16/9] w-full border border-rule object-cover sm:mt-0 sm:w-48"
+      />
+    )
+  }
 
   <div class="mt-3 shrink-0 sm:mt-0">
     <span class="label tabular-nums">{data.period}</span>

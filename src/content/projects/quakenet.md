@@ -6,6 +6,9 @@ order: 9
 period: "2026"
 summary: "A Cisco Packet Tracer network design for earthquake monitoring and emergency response, using redundant routing and core campus-network services."
 lede: "A network infrastructure concept for keeping emergency communication and response services connected."
+image:
+  src: "/projects/quakenet.png"
+  alt: "QuakeNet Cisco Packet Tracer topology connecting routers, switches, servers, printers, and PCs."
 role: "Network design and Packet Tracer implementation."
 stack:
   - "Cisco Packet Tracer"

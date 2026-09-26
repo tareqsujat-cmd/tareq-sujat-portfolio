@@ -41,6 +41,12 @@ const projects = defineCollection({
     summary: z.string(),
     /** Two-to-three sentences opening the case study. */
     lede: z.string(),
+    image: z
+      .object({
+        src: z.string(),
+        alt: z.string(),
+      })
+      .optional(),
     /** What Tareq personally built. Never omitted on featured work. */
     role: z.string(),
     collaborators: z.array(z.string()).default([]),

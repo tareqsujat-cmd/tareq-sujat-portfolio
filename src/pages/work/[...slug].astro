@@ -55,7 +55,7 @@ const externalLinks = [
 <Base
   title={data.title}
   description={data.summary}
-  image={`/og/${project.id}.png`}
+  image={data.image?.src ?? `/og/${project.id}.png`}
   structuredData={structuredData}
 >
   <article>
@@ -85,6 +85,21 @@ const externalLinks = [
         >
           {data.lede}
         </p>
+
+        {
+          data.image && (
+            <figure class="mt-10 overflow-hidden border border-rule bg-paper-raised" data-enter>
+              <img
+                src={data.image.src}
+                alt={data.image.alt}
+                width="800"
+                height="450"
+                fetchpriority="high"
+                class="max-h-[36rem] w-full object-contain object-left"
+              />
+            </figure>
+          )
+        }
 
         {
           externalLinks.length > 0 && (

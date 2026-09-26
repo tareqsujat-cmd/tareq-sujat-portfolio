@@ -6,6 +6,9 @@ order: 8
 period: "2026"
 summary: "A shared U-Net predicts pet masks and one of 37 breeds from the Oxford-IIIT Pet dataset; Base and Attention U-Nets are compared on a held-out test split."
 lede: "One image, two tasks: locate the pet and classify its breed."
+image:
+  src: "/projects/petsegmentation.png"
+  alt: "Grid of pet images with their predicted segmentation masks and breed labels."
 role: "Model implementation, training, comparison and evaluation."
 stack:
   - "Python"

@@ -6,6 +6,9 @@ order: 4
 period: "2026"
 summary: "A deployed commerce front end in Next.js 16 and React 19 — cinematic intro, WebGL background, persisted cart, full metadata and routing."
 lede: "A complete storefront built to production standards rather than tutorial standards."
+image:
+  src: "/projects/fashionwebsite.png"
+  alt: "Fashion ecommerce storefront homepage with product categories and featured collections."
 role: "Sole developer — architecture, routing, state, motion system, deployment."
 stack:
   - "Next.js 16"
