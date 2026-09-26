@@ -1,0 +1,124 @@
+---
+title: "ASD Multimodal Detection Framework"
+kicker: "Research framework"
+tier: "featured"
+order: 2
+period: "2026"
+summary: "A reproducible research pipeline for autism classification from ABIDE neuroimaging and phenotypic data — 3D backbones, five fusion strategies, Optuna search, bootstrap confidence intervals and publication figures, end to end."
+lede: "Cross-site autism classification is a benchmark where published accuracy is routinely inflated by leakage and single-site evaluation. This framework is built the other way round: the evaluation machinery came first, and the model was only allowed to claim what that machinery could defend."
+role: "Framework architecture and implementation — preprocessing, model zoo, fusion module, training loop, evaluation and explainability stack, HPO harness, and the figure factory that emits publication-ready PDFs. TODO_CONFIRM: solo or team, and supervisor."
+collaborators: []
+stack:
+  - "PyTorch"
+  - "Optuna"
+  - "nibabel"
+  - "scikit-learn"
+  - "SciPy"
+  - "pandas"
+  - "Matplotlib"
+domains:
+  - "Neuroimaging"
+  - "Multimodal ML"
+  - "Explainability"
+  - "Research tooling"
+  - "MLOps"
+links:
+  github: "https://github.com/tareqsujat-cmd/ASD-forever"
+metrics:
+  - label: "AUROC"
+    value: "0.711"
+    protocol: "bootstrap 95% CI [0.685 – 0.744]"
+    headline: true
+    caveat: "In range for honest cross-site ABIDE. Papers reporting 0.90+ on this dataset are almost always evaluating within a single site or leaking subjects across folds."
+  - label: "Balanced accuracy"
+    value: "0.677"
+    protocol: "CI [0.652 – 0.707]"
+  - label: "Sensitivity / Specificity"
+    value: "0.643 / 0.711"
+    protocol: "bootstrap CIs on both"
+    caveat: "Reported as a pair. A single accuracy figure would hide which direction the model errs in — and for a screening task that direction is the whole clinical question."
+  - label: "MCC"
+    value: "0.355"
+    protocol: "CI [0.306 – 0.414]"
+    caveat: "Matthews correlation is the imbalance-robust summary. It is deliberately the least flattering number here."
+pipeline:
+  - label: "ABIDE I + II"
+    detail: "multi-site fMRI"
+    branch: "mri"
+  - label: "Preprocess"
+    detail: "skull strip · bias · register · QC"
+    branch: "mri"
+  - label: "3D backbone"
+    detail: "ResNet · DenseNet · ConvNeXt · Swin"
+    branch: "mri"
+  - label: "Phenotype"
+    detail: "tabular + genetics"
+    branch: "tabular"
+  - label: "Impute · correct"
+    detail: "batch effects, feature selection"
+    branch: "tabular"
+  - label: "Encoder"
+    detail: "TabNet · GNN · Transformer"
+    branch: "tabular"
+  - label: "Fusion"
+    detail: "cross-attn · gated · late · intermediate · dynamic"
+    branch: "fusion"
+  - label: "Evaluate"
+    detail: "bootstrap CI · calibration · per-site"
+    branch: "fusion"
+  - label: "Explain"
+    detail: "Grad-CAM · integrated gradients"
+    branch: "fusion"
+---
+
+## The problem
+
+ABIDE aggregates brain imaging from roughly twenty independent sites. Different scanners, different acquisition protocols, different populations. That heterogeneity is the entire scientific value of the dataset — and the reason models trained on it collapse the moment they meet a scanner they have not seen.
+
+The literature makes this worse. Reported accuracies swing from 0.65 to 0.95 on nominally the same task, and the high end is usually explained by evaluating within a single site, or splitting folds by scan rather than by subject so the same brain appears on both sides of the split.
+
+I wanted a framework where that class of mistake is structurally difficult to make.
+
+## The design decision
+
+The evaluation and reporting layer was written **before** the models were tuned.
+
+That inversion is the whole point. When the bootstrap confidence intervals, per-site breakdown, calibration curves and statistical tests already exist, a promising-looking number gets interrogated automatically instead of celebrated. There is no version of this repository in which you can report a headline accuracy without also generating the per-site AUC heatmap that shows where it came from.
+
+## What the framework contains
+
+**Preprocessing.** Two independent pipelines. For MRI: skull stripping, N4 bias correction, registration, intensity normalisation, quality control, augmentation. For the tabular and genetics side: imputation, batch-effect correction, dimensionality reduction, feature selection and gene-graph construction for the GNN encoder.
+
+**A model zoo, not a model.** Four 3D imaging backbones (ResNet3D, DenseNet3D, ConvNeXt3D, Swin3D) and three tabular encoders (TabNet, a graph network, a transformer), all behind factory interfaces so a backbone is a config string rather than a code change.
+
+**Five fusion strategies** — cross-attention, gated, late, intermediate and dynamic — swappable the same way, which is what makes a fusion ablation a config sweep instead of five forks of the training script.
+
+**Training infrastructure.** Checkpointing, early stopping, exponential moving average of weights, focal and class-balanced losses, optimizer factory, deterministic seeding, hardware detection and a profiler.
+
+**Evaluation.** Bootstrap resampling for every metric's confidence interval, calibration assessment, decision-curve analysis, robustness checks, statistical significance testing, and structured error analysis that writes out the misclassified subjects so failure has a face.
+
+**Explainability.** Grad-CAM and integrated gradients over the imaging branch, attention visualisation for the fusion layer, feature importance for the tabular branch.
+
+**Reporting.** A figure factory that renders the paper's figures — architecture diagram, dataset statistics, ROC/PR curves, ablation, explainability panels — as both PNG and vector PDF, plus a self-contained HTML experiment report and a LaTeX figure manifest.
+
+**Tests.** Fourteen test modules covering preprocessing, models, fusion, training, evaluation, explainability, HPO and the figure pipeline.
+
+## Results, and what they mean
+
+Optuna searched learning rate, weight decay, dropout, focal-loss gamma, batch size and fusion architecture. The best trial selected **late fusion** at an objective of 0.719.
+
+Final held-out evaluation: **AUROC 0.711 [0.685 – 0.744]**, balanced accuracy 0.677, sensitivity 0.643, specificity 0.711, MCC 0.355.
+
+That is a modest number and it is meant to be. It sits exactly where honestly-evaluated cross-site ABIDE work sits. The contribution here is not the score — it is that every figure on this page arrives with a confidence interval, a per-site breakdown and a reproducible seed, so the score can be trusted and argued with.
+
+One thing this page deliberately does **not** show: the fusion ablation. That sweep did not complete, so the table is empty. Reporting it would be the exact failure the framework was built to prevent.
+
+## What I learned
+
+**Build the ruler before the thing you measure.** Writing the evaluation layer first changed which experiments felt worth running — and made the disappointing results legible instead of confusing.
+
+**A confidence interval is a form of intellectual honesty.** `0.711` invites a comparison it cannot support. `0.711 [0.685 – 0.744]` tells you precisely how much of a difference would be real.
+
+**Configuration is architecture.** Putting backbones and fusion strategies behind factories turned a week of merge conflicts into an afternoon of YAML, and made ablations something I would actually run.
+
+**Negative results need infrastructure too.** The error-analysis module that dumps misclassified subjects to CSV taught me more about this dataset than any metric did.

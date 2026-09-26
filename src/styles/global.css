@@ -1,0 +1,448 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   INSTRUMENT — design system
+   A lab-notebook / scientific-instrument visual language.
+   Light is the primary, art-directed mode. Dark is an equal second identity
+   ("oscilloscope at night"), not an inversion.
+   ========================================================================== */
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* --------------------------------------------------------------------------
+   1. Typefaces — self-hosted, subset, variable where available
+   -------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("/fonts/instrument-serif-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F,
+    U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("/fonts/instrument-serif-400-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F,
+    U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/geist-variable.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/geist-mono-variable.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --------------------------------------------------------------------------
+   2. Semantic colour tokens
+   Every colour is defined here in the light (default) scope, then redefined
+   wholesale for dark. Nothing gets its only definition inside a theme block.
+   -------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --paper: #f7f5f1;
+  --paper-raised: #fffdfa;
+  --paper-sunken: #efece6;
+
+  /* ink */
+  --ink: #14161a;
+  --ink-muted: #55595f;
+  --ink-faint: #666b72; /* AA at 11px on every surface incl. sunken */
+
+  /* accent — oxide */
+  --accent: #d4562a;
+  --accent-ink: #ab401d; /* AA-safe for text on paper */
+  --accent-wash: #f6e9e2;
+
+  /* structure */
+  --rule: #ddd8cf;
+  --rule-strong: #c6bfb2;
+
+  /* signals used by the Fusion Field canvas */
+  --signal-a: #d4562a; /* audio — continuous */
+  --signal-b: #3f6f7a; /* telemetry — discrete */
+  --signal-out: #14161a;
+
+  /* focus */
+  --focus: #ab401d;
+
+  /* Backdrop intensity. 0 disables it entirely.
+     Only rendered in dark mode — see components/SiteBackdrop.astro. */
+  --prism-strength: 0.82;
+
+  /* Orb backdrop palette, sampled from the reference. Change these three and
+     the whole backdrop retints — e.g. to the site's oxide accent instead. */
+  --orb-core: 250 243 246;
+  --orb-ring: 181 93 201;
+  --orb-haze: 24 1 71;
+
+  /* elevation */
+  --shadow-card: 0 1px 2px rgb(20 22 26 / 0.04), 0 8px 24px -12px rgb(20 22 26 / 0.12);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --paper: #05040a;
+  --paper-raised: #0e0d16;
+  --paper-sunken: #020105;
+
+  --ink: #e8e6e1;
+  --ink-muted: #9aa0a8;
+  --ink-faint: #797f87; /* AA at 11px on every surface incl. raised */
+
+  --accent: #f2703f;
+  --accent-ink: #ff8a5c;
+  --accent-wash: #2a1710;
+
+  --rule: #201f2b;
+  --rule-strong: #363548;
+
+  --signal-a: #f2703f;
+  --signal-b: #6fb3c4;
+  --signal-out: #e8e6e1;
+
+  --focus: #ff8a5c;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px -12px rgb(0 0 0 / 0.7);
+}
+
+/* --------------------------------------------------------------------------
+   3. Expose tokens to Tailwind
+   -------------------------------------------------------------------------- */
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-sunken: var(--paper-sunken);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-wash: var(--accent-wash);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+
+  --font-display: "Instrument Serif", ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo,
+    Consolas, monospace;
+
+  /* Fluid type scale — 320px → 1440px viewport */
+  --text-hero: clamp(2.75rem, 1.6rem + 5.75vw, 7rem);
+  --text-hero--line-height: 0.94;
+  --text-hero--letter-spacing: -0.03em;
+
+  --text-display: clamp(2rem, 1.35rem + 3.25vw, 4rem);
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.025em;
+
+  --text-title: clamp(1.5rem, 1.2rem + 1.5vw, 2.25rem);
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.02em;
+
+  --text-lede: clamp(1.0625rem, 1rem + 0.4vw, 1.3125rem);
+  --text-lede--line-height: 1.55;
+
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1;
+  --text-label--letter-spacing: 0.11em;
+
+  --spacing-gutter: clamp(1.25rem, 0.6rem + 3vw, 3.5rem);
+  --spacing-section: clamp(5rem, 3rem + 10vw, 11rem);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+/* --------------------------------------------------------------------------
+   4. Base
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  * {
+    border-color: var(--rule);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    /* offset for the sticky rail so anchors don't land under it */
+    scroll-padding-top: 6rem;
+    /*
+      The base colour lives here, not on body. The live backdrop sits at
+      z-index -1, and a painted body background would cover it.
+    */
+    background-color: var(--paper);
+  }
+
+  body {
+    background-color: transparent;
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    font-variant-ligatures: contextual;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: clip;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--paper);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Only remove the ring for mouse users, never for keyboard */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* Astro renders raw <pre> for fenced code in MDX */
+  pre {
+    overflow-x: auto;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. Component primitives
+   -------------------------------------------------------------------------- */
+
+@layer components {
+  /* The measure — every section aligns to this */
+  .shell {
+    width: 100%;
+    max-width: 84rem;
+    margin-inline: auto;
+    padding-inline: var(--spacing-gutter);
+  }
+
+  .shell-prose {
+    width: 100%;
+    max-width: 46rem;
+    margin-inline: auto;
+    padding-inline: var(--spacing-gutter);
+  }
+
+  /* Monospace metadata label — the signature typographic device */
+  .label {
+    font-family: var(--font-mono);
+    font-size: var(--text-label);
+    line-height: 1;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--ink-faint);
+  }
+
+  /* Numbered section header: "01 / SELECTED WORK ————————" */
+  .section-marker {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+  }
+
+  .section-marker::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background-color: var(--rule);
+  }
+
+  /* Hairline tick rail used along section edges */
+  .tick-rail {
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--rule) 0 1px,
+      transparent 1px 8px
+    );
+    height: 1px;
+  }
+
+  .link-underline {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.4s var(--ease-out-expo);
+  }
+
+  .link-underline:hover,
+  .link-underline:focus-visible {
+    background-size: 100% 1px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. Motion — two systems, deliberately separate
+
+   ENTRANCE (data-enter / data-enter-mask) — above-the-fold content.
+   Pure CSS animation that runs on load: no JavaScript, no observer, nothing
+   that can get stuck. The hero headline is the most important element on the
+   site and must never depend on a script succeeding.
+
+   REVEAL (data-reveal / data-reveal-mask) — below-the-fold content.
+   Observer-driven, gated on `.reveals-armed`. The inline head script sets that
+   class and also removes it on a timer if the reveal module never boots, so
+   content can never stay permanently invisible.
+   -------------------------------------------------------------------------- */
+
+@layer utilities {
+  /* Entrance ------------------------------------------------------------- */
+
+  [data-enter] {
+    animation: enter-rise 0.8s var(--ease-out-expo) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+
+  [data-enter-mask] {
+    animation: enter-mask 0.95s var(--ease-out-expo) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+
+  @keyframes enter-rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes enter-mask {
+    from {
+      clip-path: inset(0 0 105% 0);
+    }
+    to {
+      clip-path: inset(0 0 -20% 0);
+    }
+  }
+
+  /* Reveal --------------------------------------------------------------- */
+
+  .reveals-armed [data-reveal] {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.7s var(--ease-out-expo),
+      transform 0.7s var(--ease-out-expo);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .reveals-armed [data-reveal].is-revealed {
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveals-armed [data-reveal-mask] {
+    clip-path: inset(0 0 105% 0);
+    transition: clip-path 0.9s var(--ease-out-expo);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .reveals-armed [data-reveal-mask].is-revealed {
+    clip-path: inset(0 0 -20%);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   7. Reduced motion — hard stop
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  [data-reveal],
+  [data-reveal-mask],
+  [data-enter],
+  [data-enter-mask] {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+    animation: none !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --ink-muted: #3a3e44;
+    --ink-faint: #55595f;
+    --rule: #b9b2a5;
+  }
+
+  [data-theme="dark"] {
+    --ink-muted: #c4c9cf;
+    --ink-faint: #9aa0a8;
+    --rule: #4a4f56;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+}

@@ -1,0 +1,156 @@
+---
+import type { CollectionEntry } from "astro:content";
+import Pipeline from "~/components/Pipeline.astro";
+
+interface Props {
+  project: CollectionEntry<"projects">;
+  index: number;
+  /** The first project carries the most visual weight. */
+  emphasis?: boolean;
+  /** Keeps the document outline contiguous under whatever heading precedes it. */
+  headingLevel?: "h2" | "h3";
+  /**
+   * Set on a card that renders above the fold, so it animates via CSS on load
+   * rather than waiting for the scroll observer (which would gate LCP).
+   */
+  entrance?: boolean;
+}
+
+const {
+  project,
+  index,
+  emphasis = false,
+  headingLevel: Heading = "h3",
+  entrance = false,
+} = Astro.props;
+const { data } = project;
+const href = `/work/${project.id}`;
+
+const headline = data.metrics.find((m) => m.headline) ?? data.metrics[0];
+const number = String(index + 1).padStart(2, "0");
+---
+
+<article
+  class="group relative border-t border-rule pt-6 transition-colors duration-300 sm:pt-8"
+  {...{ [entrance ? "data-enter" : "data-reveal"]: true }}
+>
+  <div class="flex items-baseline justify-between gap-4">
+    <span class="label text-accent-ink">{number}</span>
+    <span class="label">{data.kicker} · {data.period}</span>
+  </div>
+
+  <div class="mt-6 grid gap-x-12 gap-y-8 lg:grid-cols-12">
+    <div class:list={["min-w-0", emphasis ? "lg:col-span-7" : "lg:col-span-6"]}>
+      <Heading
+        class:list={[
+          "font-display tracking-tight",
+          emphasis ? "text-display" : "text-title",
+        ]}
+      >
+        <a
+          href={href}
+          class="transition-colors duration-300 group-hover:text-accent-ink focus-visible:text-accent-ink"
+        >
+          {data.title}
+        </a>
+      </Heading>
+
+      <p
+        class:list={[
+          "mt-4 max-w-xl text-ink-muted",
+          emphasis ? "text-lede" : "text-[0.9375rem] leading-relaxed",
+        ]}
+      >
+        {data.summary}
+      </p>
+
+      {
+        headline && (
+          <div class="mt-7 inline-flex flex-col rounded-sm border border-rule bg-paper-raised px-4 py-3">
+            <span class="label mb-1.5">{headline.label}</span>
+            <span class="font-display text-title leading-none tabular-nums text-ink">
+              {headline.value}
+            </span>
+            {headline.protocol && (
+              <span class="mt-1.5 font-mono text-[0.6875rem] text-ink-faint">
+                {headline.protocol}
+              </span>
+            )}
+          </div>
+        )
+      }
+
+      <ul class="mt-7 flex flex-wrap gap-x-3 gap-y-1.5">
+        {
+          data.stack.slice(0, 6).map((tech) => (
+            <li class="font-mono text-[0.6875rem] text-ink-faint">{tech}</li>
+          ))
+        }
+      </ul>
+
+      <div class="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <a
+          href={href}
+          class="link-underline text-sm font-medium text-ink"
+          aria-label={`Read the ${data.title} case study`}
+        >
+          Read the case study<span
+            class="ml-1.5 inline-block transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:translate-x-0.5"
+            aria-hidden="true">→</span
+          >
+        </a>
+
+        {
+          data.links.github && (
+            <a
+              href={data.links.github}
+              rel="noopener"
+              target="_blank"
+              class="link-underline text-sm text-ink-muted hover:text-ink"
+            >
+              GitHub <span aria-hidden="true">↗</span>
+              <span class="sr-only">(opens in a new tab)</span>
+            </a>
+          )
+        }
+
+        {
+          data.links.paper && (
+            <a
+              href={data.links.paper}
+              rel="noopener"
+              target="_blank"
+              class="link-underline text-sm text-ink-muted hover:text-ink"
+            >
+              Paper <span aria-hidden="true">↗</span>
+              <span class="sr-only">(opens in a new tab)</span>
+            </a>
+          )
+        }
+
+        {
+          data.links.live && (
+            <a
+              href={data.links.live}
+              rel="noopener"
+              target="_blank"
+              class="link-underline text-sm text-ink-muted hover:text-ink"
+            >
+              Live site <span aria-hidden="true">↗</span>
+              <span class="sr-only">(opens in a new tab)</span>
+            </a>
+          )
+        }
+      </div>
+    </div>
+
+    {
+      data.pipeline.length > 0 && (
+        <div class:list={["min-w-0", emphasis ? "lg:col-span-5" : "lg:col-span-6"]}>
+          <p class="label mb-3">Architecture</p>
+          <Pipeline stages={data.pipeline} compact />
+        </div>
+      )
+    }
+  </div>
+</article>

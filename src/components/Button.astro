@@ -1,0 +1,46 @@
+---
+interface Props {
+  href: string;
+  variant?: "primary" | "secondary" | "ghost";
+  download?: boolean;
+  external?: boolean;
+  class?: string;
+}
+
+const {
+  href,
+  variant = "primary",
+  download = false,
+  external = false,
+  class: className = "",
+} = Astro.props;
+
+const base =
+  "group inline-flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-medium transition-colors duration-200 ease-[var(--ease-out-expo)]";
+
+const variants = {
+  primary: "bg-ink text-paper hover:bg-accent-ink",
+  secondary: "border border-rule-strong text-ink hover:border-ink hover:bg-paper-raised",
+  ghost: "text-ink-muted hover:text-ink px-2",
+} as const;
+
+const rel = external ? "noopener" : undefined;
+const target = external ? "_blank" : undefined;
+---
+
+<a
+  href={href}
+  class:list={[base, variants[variant], className]}
+  rel={rel}
+  target={target}
+  {...download ? { download: "" } : {}}
+>
+  <slot />
+  <span
+    class="transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:translate-x-0.5"
+    aria-hidden="true"
+  >
+    {download ? "↓" : external ? "↗" : "→"}
+  </span>
+  {external && <span class="sr-only">(opens in a new tab)</span>}
+</a>

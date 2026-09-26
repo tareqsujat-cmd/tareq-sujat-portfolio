@@ -1,0 +1,109 @@
+---
+import SectionHeader from "~/components/SectionHeader.astro";
+import { research } from "~/data/education";
+import Pending from "~/components/Pending.astro";
+import { isPending } from "~/lib/pending";
+
+const kindStyles: Record<string, string> = {
+  Paper: "var(--signal-a)",
+  Thesis: "var(--signal-b)",
+  Framework: "var(--ink-faint)",
+};
+---
+
+<section id="research" class="border-t border-rule py-[var(--spacing-section)]">
+  <div class="shell">
+    <SectionHeader
+      index="02"
+      label="Research"
+      title="Work that had to survive review."
+      lede="Multimodal learning across three domains — touchless interaction, vehicle diagnostics and neuroimaging — with the evaluation protocol stated alongside every result."
+    />
+
+    <ol class="border-t border-rule">
+      {
+        research.map((item) => {
+          const unconfirmed = isPending(item.status);
+          return (
+            <li class="group border-b border-rule py-8" data-reveal>
+              <div class="grid gap-x-10 gap-y-5 lg:grid-cols-12">
+                <div class="lg:col-span-3">
+                  <span
+                    class="label border-l-2 pl-2.5"
+                    style={`border-color:${kindStyles[item.kind]};color:${kindStyles[item.kind]}`}
+                  >
+                    {item.kind}
+                  </span>
+                  <p class="label mt-3 tabular-nums">{item.year}</p>
+                </div>
+
+                <div class="min-w-0 lg:col-span-9">
+                  <h3 class="max-w-3xl text-balance font-display text-title">
+                    {item.href ? (
+                      <a
+                        href={item.href}
+                        rel="noopener"
+                        target="_blank"
+                        class="transition-colors duration-300 hover:text-accent-ink"
+                      >
+                        {item.title}
+                        <span aria-hidden="true" class="text-ink-faint"> ↗</span>
+                        <span class="sr-only">(opens in a new tab)</span>
+                      </a>
+                    ) : (
+                      item.title
+                    )}
+                  </h3>
+
+                  {item.authors && (
+                    <p class="mt-3 max-w-3xl text-sm leading-relaxed text-ink-faint">
+                      {item.authors.map((author, i) => (
+                        <>
+                          {i > 0 && ", "}
+                          {author === "Tareq Sujat" ? (
+                            <strong class="font-medium text-ink">{author}</strong>
+                          ) : (
+                            author
+                          )}
+                        </>
+                      ))}
+                      {item.yourPosition && (
+                        <span class="text-ink-faint"> · {item.yourPosition}</span>
+                      )}
+                    </p>
+                  )}
+
+                  <p class="mt-4 max-w-2xl text-[0.9375rem] leading-relaxed text-ink-muted">
+                    {item.summary}
+                  </p>
+
+                  <div class="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
+                    {/*
+                      Publication status is rendered exactly as recorded. An
+                      unconfirmed status is shown as unconfirmed rather than
+                      quietly upgraded to "published".
+                    */}
+                    {unconfirmed ? (
+                      <Pending value={item.status} fallback="venue and status" />
+                    ) : (
+                      <span class="label text-ink-muted">{item.status}</span>
+                    )}
+
+                    {item.project && (
+                      <a
+                        href={`/work/${item.project}`}
+                        class="link-underline text-sm font-medium text-ink"
+                      >
+                        Case study <span aria-hidden="true">→</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </li>
+          );
+        })
+      }
+    </ol>
+  </div>
+</section>

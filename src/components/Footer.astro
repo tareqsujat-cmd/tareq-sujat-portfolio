@@ -1,0 +1,56 @@
+---
+import { site } from "~/data/site";
+
+const year = new Date().getFullYear();
+
+const links = [
+  { label: "GitHub", href: site.links.github, external: true },
+  { label: "LinkedIn", href: site.links.linkedin, external: true },
+  { label: "ResearchGate", href: site.links.researchgate, external: true },
+  { label: "Email", href: `mailto:${site.email.primary}`, external: false },
+];
+---
+
+<footer class="border-t border-rule">
+  <div class="shell py-10">
+    <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="label mb-2.5">Colophon</p>
+        <p class="max-w-md text-sm leading-relaxed text-ink-muted">
+          Built with Astro and Tailwind. Instrument Serif, Geist and Geist Mono,
+          self-hosted. No analytics, no trackers, no client-side framework.
+          <a
+            href={`${site.links.github}?tab=repositories`}
+            class="link-underline text-ink"
+            rel="noopener">Source on GitHub</a
+          >.
+        </p>
+      </div>
+
+      <ul class="flex flex-wrap gap-x-5 gap-y-2">
+        {
+          links.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                class="link-underline text-sm text-ink-muted hover:text-ink"
+                {...(link.external ? { rel: "noopener", target: "_blank" } : {})}
+              >
+                {link.label}
+                {link.external && <span aria-hidden="true"> ↗</span>}
+                {link.external && <span class="sr-only">(opens in a new tab)</span>}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div
+      class="mt-10 flex flex-col gap-2 border-t border-rule pt-5 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <p class="label">© {year} {site.name}</p>
+      <p class="label">{site.location}</p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,154 @@
+---
+/**
+ * Social card surfaces, rendered as real pages at 1200×630.
+ *
+ * These are screenshotted into public/og/*.png by scripts/generate-og.mjs. They
+ * are authored here rather than in a separate image pipeline so the cards use
+ * the same tokens, typefaces and signal palette as the site itself — a card can
+ * never drift away from the design it represents.
+ *
+ * Excluded from the sitemap and marked noindex; they exist only to be captured.
+ */
+import { getCollection } from "astro:content";
+import type { GetStaticPaths } from "astro";
+import "~/styles/global.css";
+import OrbStill from "~/components/OrbStill.astro";
+import { site } from "~/data/site";
+
+export const getStaticPaths = (async () => {
+  const projects = await getCollection("projects", ({ data }) => !data.draft);
+
+  return [
+    {
+      params: { slug: "default" },
+      props: {
+        kicker: "CSE · BRAC University · Dhaka",
+        title: "I build systems that fuse dissimilar signals into decisions you can trust.",
+        metricLabel: null,
+        metricValue: null,
+        footer: "Multimodal ML · Computer vision · Web engineering",
+      },
+    },
+    ...projects.map((project) => {
+      const headline =
+        project.data.metrics.find((m) => m.headline) ?? project.data.metrics[0];
+      return {
+        params: { slug: project.id },
+        props: {
+          kicker: `${project.data.kicker} · ${project.data.period}`,
+          title: project.data.title,
+          metricLabel: headline?.label ?? null,
+          metricValue: headline?.value ?? null,
+          footer: project.data.stack.slice(0, 5).join(" · "),
+        },
+      };
+    }),
+  ];
+}) satisfies GetStaticPaths;
+
+const { kicker, title, metricLabel, metricValue, footer } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+      /* The card is much wider than tall, so the orb sits further right and
+         smaller than it does on the site. */
+      .og-orb {
+        opacity: 0.95;
+      }
+    </style>
+  </head>
+  <body class="bg-paper">
+    <div class="relative isolate flex h-[630px] w-[1200px] flex-col justify-between overflow-hidden p-16">
+      <OrbStill class="og-orb" />
+
+      <!-- corner rules -->
+      <div
+        class="pointer-events-none absolute inset-10 border border-rule"
+        aria-hidden="true"
+      >
+      </div>
+
+      <header class="relative flex items-baseline justify-between">
+        <span class="font-mono text-[15px] font-medium uppercase tracking-[0.14em] text-ink">
+          {site.name}
+        </span>
+        <span class="font-mono text-[13px] uppercase tracking-[0.14em] text-ink-faint">
+          {kicker}
+        </span>
+      </header>
+
+      <div class="relative max-w-[880px]">
+        <h1
+          class="font-display text-[68px] leading-[1.02] tracking-[-0.025em] text-ink"
+          style="text-wrap:balance"
+        >
+          {title}
+        </h1>
+
+        {
+          metricValue && (
+            <div class="mt-8 inline-flex items-baseline gap-4 rounded border border-rule bg-paper-raised px-5 py-3">
+              <span class="font-mono text-[13px] uppercase tracking-[0.12em] text-accent-ink">
+                {metricLabel}
+              </span>
+              <span class="font-display text-[34px] leading-none text-ink">
+                {metricValue}
+              </span>
+            </div>
+          )
+        }
+      </div>
+
+      <footer class="relative flex items-end justify-between">
+        <span class="font-mono text-[14px] tracking-[0.06em] text-ink-faint">
+          {footer}
+        </span>
+
+        {/* The signature motif, held still: two signals into one. */}
+        <svg width="230" height="54" viewBox="0 0 230 54" fill="none" aria-hidden="true">
+          <path
+            d="M0 14 C22 4, 34 26, 52 18 C70 10, 82 22, 104 20"
+            stroke="var(--signal-a)"
+            stroke-width="2"
+            stroke-linecap="round"
+          ></path>
+          <path
+            d="M0 44 h14 v-8 h14 v10 h14 v-6 h14 v4 h14 v-6 h20 v-2 h14"
+            stroke="var(--signal-b)"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          ></path>
+          <circle
+            cx="126"
+            cy="27"
+            r="11"
+            stroke="var(--accent)"
+            stroke-width="2"
+            fill="none"></circle>
+          <circle cx="126" cy="27" r="2.5" fill="var(--ink)"></circle>
+          <path
+            d="M141 27 C160 27, 176 21, 196 27 C208 30, 216 27, 230 27"
+            stroke="var(--ink)"
+            stroke-width="2"
+            stroke-linecap="round"
+          ></path>
+        </svg>
+      </footer>
+    </div>
+  </body>
+</html>

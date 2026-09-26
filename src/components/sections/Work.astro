@@ -1,0 +1,51 @@
+---
+import { getCollection } from "astro:content";
+import SectionHeader from "~/components/SectionHeader.astro";
+import FeaturedProject from "~/components/FeaturedProject.astro";
+import CompactProject from "~/components/CompactProject.astro";
+
+const all = await getCollection("projects", ({ data }) => !data.draft);
+
+const featured = all
+  .filter((p) => p.data.tier === "featured")
+  .sort((a, b) => a.data.order - b.data.order);
+
+const additional = all
+  .filter((p) => p.data.tier === "additional")
+  .sort((a, b) => a.data.order - b.data.order);
+---
+
+<section id="work" class="py-[var(--spacing-section)]">
+  <div class="shell">
+    <SectionHeader
+      index="01"
+      label="Selected work"
+      title="Three projects, and what each one got wrong first."
+      lede="Every case study reports the number its evaluation protocol can actually defend — including where an early result turned out to be measuring the wrong thing."
+    />
+
+    <div class="flex flex-col gap-16 sm:gap-20">
+      {
+        featured.map((project, i) => (
+          <FeaturedProject project={project} index={i} emphasis={i === 0} />
+        ))
+      }
+    </div>
+
+    {
+      additional.length > 0 && (
+        <div class="mt-24 sm:mt-32">
+          <p class="section-marker label mb-8" data-reveal>
+            <span>Also built</span>
+          </p>
+
+          <div class="border-b border-rule">
+            {additional.map((project) => (
+              <CompactProject project={project} />
+            ))}
+          </div>
+        </div>
+      )
+    }
+  </div>
+</section>

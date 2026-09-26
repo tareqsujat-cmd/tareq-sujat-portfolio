@@ -1,0 +1,54 @@
+---
+import type { CollectionEntry } from "astro:content";
+
+interface Props {
+  project: CollectionEntry<"projects">;
+  headingLevel?: "h2" | "h3";
+}
+
+const { project, headingLevel: Heading = "h3" } = Astro.props;
+const { data } = project;
+
+/** Prefer the live site, then source, then the case-study page. */
+const primary = data.links.live ?? data.links.github ?? `/work/${project.id}`;
+const isExternal = primary.startsWith("http");
+---
+
+<article
+  class="group flex flex-col border-t border-rule py-6 sm:flex-row sm:items-baseline sm:gap-8"
+  data-reveal
+>
+  <div class="mb-2 shrink-0 sm:mb-0 sm:w-40">
+    <span class="label">{data.kicker}</span>
+  </div>
+
+  <div class="min-w-0 flex-1">
+    <Heading class="text-[1.0625rem] font-medium tracking-tight text-ink">
+      <a
+        href={primary}
+        class="transition-colors duration-200 group-hover:text-accent-ink"
+        {...isExternal ? { rel: "noopener", target: "_blank" } : {}}
+      >
+        {data.title}
+        {isExternal && <span aria-hidden="true" class="text-ink-faint"> ↗</span>}
+        {isExternal && <span class="sr-only">(opens in a new tab)</span>}
+      </a>
+    </Heading>
+
+    <p class="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted">
+      {data.summary}
+    </p>
+
+    <ul class="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+      {
+        data.stack.slice(0, 5).map((tech) => (
+          <li class="font-mono text-[0.6875rem] text-ink-faint">{tech}</li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <div class="mt-3 shrink-0 sm:mt-0">
+    <span class="label tabular-nums">{data.period}</span>
+  </div>
+</article>

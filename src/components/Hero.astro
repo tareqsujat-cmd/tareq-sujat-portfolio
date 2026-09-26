@@ -1,0 +1,130 @@
+---
+import { site } from "~/data/site";
+import Button from "~/components/Button.astro";
+import { resumeAvailable, resumeHref, resumeLabel } from "~/lib/resume";
+---
+
+<section id="top" class="relative pt-10 sm:pt-14 lg:pt-20">
+  <div class="relative z-10 shell">
+    <div class="max-w-[68rem]">
+      <h1 class="text-balance">
+        <span class="label mb-6 block" data-enter>{site.name}</span>
+        <span
+          class="block font-display text-hero"
+          data-enter-mask
+          style="--enter-delay:80ms"
+        >
+          I build systems that fuse <em class="italic text-accent-ink">dissimilar signals</em
+          > into decisions you can trust.
+        </span>
+      </h1>
+
+      <p
+        class="mt-8 max-w-2xl text-lede text-ink-muted"
+        data-enter
+        style="--enter-delay:220ms"
+      >
+        Undergraduate CSE researcher at BRAC University working on multimodal machine
+        learning — engine acoustics with vehicle telemetry, neuroimaging with phenotype,
+        hand geometry with language models. I care most about the part everyone skips:
+        proving the model actually generalises.
+      </p>
+
+      <div
+        class="mt-10 flex flex-wrap items-center gap-3"
+        data-enter
+        style="--enter-delay:320ms"
+      >
+        <Button href="/#work" variant="primary">Explore the work</Button>
+        <Button href={resumeHref} variant="secondary" download={resumeAvailable}>{resumeLabel}</Button>
+        <Button href="/#contact" variant="ghost">Get in touch</Button>
+      </div>
+    </div>
+  </div>
+
+  <!--
+    The Fusion Field.
+    Annotated like a figure rather than left as ambient decoration: the edge
+    labels tell a non-technical reader exactly what they are looking at, while
+    the attention node and live weight readout mean something specific to an
+    ML engineer.
+  -->
+  <figure class="relative z-10 mt-12 sm:mt-16" data-enter style="--enter-delay:420ms">
+    <div class="tick-rail" aria-hidden="true"></div>
+
+    <div class="relative h-[220px] sm:h-[280px] lg:h-[320px]">
+      <canvas
+        data-fusion-field
+        class="absolute inset-0 h-full w-full"
+        aria-hidden="true"></canvas>
+
+      <!-- Input annotations -->
+      <div
+        class="pointer-events-none absolute inset-0 shell"
+        aria-hidden="true"
+      >
+        <span
+          class="label absolute left-[var(--spacing-gutter)] top-[10%] text-[color:var(--signal-a)]"
+        >
+          Audio
+        </span>
+        <span
+          class="label absolute bottom-[8%] left-[var(--spacing-gutter)] text-[color:var(--signal-b)]"
+        >
+          OBD-II
+        </span>
+        <span
+          class="label absolute right-[var(--spacing-gutter)] top-[34%] text-ink"
+        >
+          Grade
+        </span>
+      </div>
+    </div>
+
+    <div class="tick-rail" aria-hidden="true"></div>
+
+    <figcaption class="shell mt-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+      <span class="label max-w-lg normal-case tracking-normal text-ink-faint">
+        Fig. 0 — Two dissimilar signals, one decision. The recurring shape of
+        everything below.
+      </span>
+      <span
+        class="label tabular-nums text-ink-faint"
+        data-fusion-readout
+        aria-hidden="true">audio 0.50 · telemetry 0.50</span
+      >
+    </figcaption>
+  </figure>
+</section>
+
+<script>
+  import { createFusionField } from "~/lib/fusion-field";
+
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-fusion-field]");
+  const readout = document.querySelector<HTMLElement>("[data-fusion-readout]");
+
+  /**
+   * Sizing the canvas and drawing the first frame is ~0.5 s of work on an
+   * integrated GPU, and it was landing before first paint. The figure is
+   * decorative and sits below the headline, so it waits for the page to paint
+   * and go idle — exactly like the backdrop shader.
+   */
+  function boot() {
+    if (!canvas) return;
+    const field = createFusionField(canvas, readout);
+    // Colours come from CSS custom properties, so a theme switch has to
+    // re-read them.
+    window.addEventListener("themechange", () => field.refreshPalette());
+  }
+
+  function schedule() {
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(boot, { timeout: 1500 });
+    } else {
+      setTimeout(boot, 200);
+    }
+  }
+
+  if (document.readyState === "complete") schedule();
+  else window.addEventListener("load", schedule, { once: true });
+</script>

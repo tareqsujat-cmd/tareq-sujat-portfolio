@@ -1,0 +1,58 @@
+---
+import { getCollection } from "astro:content";
+import Base from "~/layouts/Base.astro";
+import SectionHeader from "~/components/SectionHeader.astro";
+import FeaturedProject from "~/components/FeaturedProject.astro";
+import CompactProject from "~/components/CompactProject.astro";
+
+const all = await getCollection("projects", ({ data }) => !data.draft);
+
+const featured = all
+  .filter((p) => p.data.tier === "featured")
+  .sort((a, b) => a.data.order - b.data.order);
+
+const additional = all
+  .filter((p) => p.data.tier === "additional")
+  .sort((a, b) => a.data.order - b.data.order);
+---
+
+<Base
+  title="Work"
+  description="Case studies in multimodal machine learning, computer vision and web engineering — each reported with the evaluation protocol behind it."
+>
+  <div class="shell py-16 sm:py-24">
+    <SectionHeader
+      as="h1"
+      entrance
+      index="01"
+      label="Work"
+      title="Everything, in order of what it taught me."
+      lede="Three case studies with full narratives, and the supporting projects that built the foundations underneath them."
+    />
+
+    <div class="flex flex-col gap-16 sm:gap-20">
+      {
+        featured.map((project, i) => (
+          <FeaturedProject
+            project={project}
+            index={i}
+            emphasis={i === 0}
+            headingLevel="h2"
+            entrance={i === 0}
+          />
+        ))
+      }
+    </div>
+
+    <div class="mt-24 sm:mt-32">
+      <p class="section-marker label mb-8" data-reveal>
+        <span>Also built</span>
+      </p>
+      <div class="border-b border-rule">
+        {additional.map((project) => (
+          <CompactProject project={project} headingLevel="h2" />
+        ))}
+      </div>
+    </div>
+  </div>
+</Base>

@@ -1,0 +1,52 @@
+---
+interface Props {
+  index: string;
+  label: string;
+  title?: string;
+  lede?: string;
+  /** Renders the heading as h1 on standalone pages. */
+  as?: "h1" | "h2";
+  /**
+   * Above-the-fold headers animate with the CSS entrance system instead of the
+   * scroll observer, so they paint immediately and never gate LCP.
+   */
+  entrance?: boolean;
+}
+
+const { index, label, title, lede, as: Tag = "h2", entrance = false } = Astro.props;
+
+const reveal = entrance ? "data-enter" : "data-reveal";
+const revealMask = entrance ? "data-enter-mask" : "data-reveal";
+const delayVar = entrance ? "--enter-delay" : "--reveal-delay";
+---
+
+<header class="mb-12 sm:mb-16">
+  <p class="section-marker label mb-8" {...{ [reveal]: true }}>
+    <span class="text-accent-ink">{index}</span>
+    <span>{label}</span>
+  </p>
+
+  {
+    title && (
+      <Tag
+        class="max-w-3xl font-display text-display"
+        {...{ [revealMask]: true }}
+        style={`${delayVar}:60ms`}
+      >
+        {title}
+      </Tag>
+    )
+  }
+
+  {
+    lede && (
+      <p
+        class="mt-5 max-w-2xl text-lede text-ink-muted"
+        {...{ [reveal]: true }}
+        style={`${delayVar}:140ms`}
+      >
+        {lede}
+      </p>
+    )
+  }
+</header>

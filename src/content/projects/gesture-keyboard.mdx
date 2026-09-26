@@ -1,0 +1,115 @@
+---
+title: "Bilingual Gesture Keyboard & Mouse"
+kicker: "Research paper — third author"
+tier: "featured"
+order: 3
+period: "2026"
+summary: "A touchless keyboard-and-mouse driven by hand geometry, with LSTM next-word prediction in both English and Bangla — 9 gestures at sub-millisecond latency, benchmarked across seven lighting conditions."
+lede: "Touchless text entry usually fails on one of three things: a tiny gesture vocabulary, collapse under bad lighting, or a model too heavy to run in real time. This paper attacks all three by refusing to learn the gestures at all — and adds a script most gesture keyboards ignore entirely."
+role: "TODO_CONFIRM: your specific contribution to this paper (third author of six). Nothing is claimed here until you fill it in."
+collaborators:
+  - "Sammam Mahdi"
+  - "Reshad Ul Karim"
+  - "Syeda Maliha Tabassum"
+  - "Abrar Samin"
+  - "Aniqua Nusrat Zereen"
+supervisor: "Aniqua Nusrat Zereen"
+stack:
+  - "Python"
+  - "MediaPipe"
+  - "OpenCV"
+  - "NumPy"
+  # TODO_CONFIRM: which framework trained the LSTMs (Keras/TensorFlow or PyTorch)
+  # and whether PyAutoGUI drove the key/pointer layer. Not listed until confirmed.
+domains:
+  - "Computer vision"
+  - "HCI"
+  - "NLP"
+  - "Real-time systems"
+links:
+  paper: "https://www.researchgate.net/publication/408869355_Vision-based_Hand_Gesture_Virtual_Keyboard-Mouse_framework_with_Bilingual_Next-word_prediction"
+note: "This page describes the manuscript and links its ResearchGate record. It makes no claim of acceptance or publication at any venue — that will be stated here only once it is confirmed."
+metrics:
+  - label: "Gesture accuracy"
+    value: "≥ 97.4%"
+    protocol: "9 static gestures, 7 lighting conditions"
+    headline: true
+  - label: "Gesture latency"
+    value: "< 0.03 ms"
+    protocol: "per gesture, geometric encoding"
+    caveat: "Three orders of magnitude below a CNN classifier — because there is no classifier. Landmarks are decoded with geometry, not inference."
+  - label: "Throughput"
+    value: "up to 37.7 FPS"
+    protocol: "full pipeline, commodity hardware"
+  - label: "Character error rate"
+    value: "3.43% EN · 8.34% BN"
+    protocol: "LSTM next-word prediction, perplexity < 1.15"
+    caveat: "Bangla is the harder script — richer morphology and a larger effective vocabulary. The gap is reported, not smoothed over."
+pipeline:
+  - label: "Webcam"
+    detail: "single RGB stream"
+  - label: "MediaPipe"
+    detail: "21 hand landmarks"
+  - label: "Geometric encoding"
+    detail: "angles + distances, no inference"
+  - label: "Gesture"
+    detail: "9 static classes"
+  - label: "Keyboard / mouse"
+    detail: "key + pointer actions"
+  - label: "LSTM"
+    detail: "2 layers, EN + BN"
+  - label: "Next word"
+    detail: "ranked candidates"
+---
+
+## The problem
+
+Gesture-driven text entry has been demonstrated many times and adopted almost never. Surveying the prior work, the same three failures recur:
+
+**The vocabulary is too small.** Systems that recognise five to seven gestures cannot express a keyboard. Typing becomes a mode-switching puzzle.
+
+**Lighting breaks everything.** Approaches built on raw pixels — HSV thresholding, CNNs over cropped hand images — degrade sharply when the light changes, and most papers only report one lighting condition.
+
+**Real time is claimed, not measured.** A two-second delay per keystroke, or an unreported frame rate, disqualifies a system for actual use no matter how good the accuracy is.
+
+And nearly all of it is English-only. Bangla — roughly 240 million speakers — has almost no touchless text-entry support.
+
+## The core idea: don't classify the gesture
+
+The pipeline is deliberately **non-probabilistic** at the recognition stage.
+
+MediaPipe already solves the hard perception problem: it returns 21 normalised 3D hand landmarks per frame. Once you have those coordinates, a gesture is a *geometric configuration* — a set of joint angles and inter-landmark distances — not an image to be classified.
+
+So instead of training a CNN on hand crops, the system encodes the landmark geometry directly and decodes the gesture with explicit rules.
+
+Three things fall out of that choice:
+
+- **Latency drops to under 0.03 ms per gesture.** There is no forward pass. It is arithmetic on 21 points.
+- **Lighting robustness is inherited**, not learned. MediaPipe handles illumination; downstream geometry is invariant to it. The paper validates this across **seven lighting conditions**.
+- **Adding a gesture means writing a constraint**, not collecting and labelling a dataset.
+
+The tradeoff is real and worth stating: this works for *static* gestures. Dynamic, trajectory-based gestures would need the temporal model back.
+
+## Where learning is actually needed
+
+Recognition is geometry. Prediction is where a model earns its place.
+
+Two-layer LSTMs handle **next-word prediction in English and Bangla**, which is what makes gesture typing fast enough to tolerate — you select a predicted word rather than spelling it out one gesture at a time.
+
+Results: **above 97% accuracy with perplexity below 1.15**, giving character error rates of **3.43% for English and 8.34% for Bangla**.
+
+The Bangla gap is the honest, interesting part. It is a morphologically richer script with a larger effective vocabulary and far less training data available. The paper reports the gap rather than averaging the two languages into one flattering number.
+
+## The system around it
+
+A unified interface maps recognised gestures to both key presses and pointer actions, so keyboard and mouse are one modality rather than two modes. A lightweight monitor logs frame rate, latency and resource usage continuously, which is what allowed the cross-platform statistical comparison — the system was benchmarked on multiple hardware configurations, not one developer laptop.
+
+Everything runs sequentially in real time: **up to 37.7 FPS** end to end.
+
+## Authorship
+
+Six authors, BRAC University, with supervision from Aniqua Nusrat Zereen (Mahidol University). I am third author.
+
+The specific division of work is still to be stated precisely, and is marked as
+pending rather than guessed at. Overstating a contribution to a co-authored
+paper is not worth doing in front of a recruiter who may well ask about it.

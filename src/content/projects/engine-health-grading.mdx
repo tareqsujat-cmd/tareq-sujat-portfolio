@@ -1,0 +1,147 @@
+---
+title: "Multimodal Engine Health Grading"
+kicker: "Undergraduate thesis"
+tier: "featured"
+order: 1
+period: "2026"
+summary: "Grading engine health on a four-level ordinal scale by fusing OBD-II telemetry with engine audio — and catching the model memorising the driver instead of the engine."
+lede: "A mechanic hears a problem before a scanner reports one. A scanner sees a problem the ear cannot. This thesis builds a model that listens and reads telemetry at the same time, and grades engine health on an ordinal scale from Normal to Critical."
+role: "Audio branch and multimodal fusion. I designed and trained MSDA-Net — the multi-scale attention network over log-Mel spectrograms — implemented the CORN ordinal head, built the embedding-extraction and fusion pipeline, and ran the cross-driver evaluation that exposed the telemetry branch's generalisation gap."
+collaborators:
+  - "Thesis partner (OBD-II branch) — TODO_CONFIRM: name and split of work"
+supervisor: "TODO_CONFIRM: supervisor name"
+stack:
+  - "PyTorch"
+  - "librosa"
+  - "NumPy"
+  - "scikit-learn"
+  - "pandas"
+  - "Matplotlib"
+domains:
+  - "Multimodal ML"
+  - "Audio / DSP"
+  - "Time-series"
+  - "Ordinal classification"
+links:
+  github: "https://github.com/tareqsujat-cmd/Multimodal-Car-Engine-health-grading-using-Obd-2-data-and-car-engine-audio"
+metrics:
+  - label: "OBD-II, cross-driver"
+    value: "93.3% ± 4.9%"
+    protocol: "k-fold, held-out drivers"
+    headline: true
+    caveat: "The number that counts. Held-out-driver folds — the only split that tests whether the model learned the engine rather than the person driving it."
+  - label: "OBD-II, same-driver"
+    value: "99.86%"
+    protocol: "random split, drivers seen in training"
+    caveat: "6.5 points higher than cross-driver. That gap is driver-style memorisation, not engine understanding."
+  - label: "Audio only (MSDA-Net)"
+    value: "96.7%"
+    protocol: "held-out test set"
+    caveat: "MCC 0.899 · AUC 0.991 · Critical-class F1 1.00"
+  - label: "Fusion, same-driver"
+    value: "QWK 0.9995"
+    protocol: "random split, n = 13,113"
+    caveat: "Inherits the same-driver optimism above. Reported for completeness, not as a generalisation claim."
+pipeline:
+  - label: "Engine audio"
+    detail: "3 s @ 44.1 kHz"
+    branch: "audio"
+  - label: "Log-Mel"
+    detail: "128 mel bands"
+    branch: "audio"
+  - label: "MSDA-Net"
+    detail: "multi-scale + SE, freq + temporal attention"
+    branch: "audio"
+  - label: "512-d"
+    detail: "embedding"
+    branch: "audio"
+  - label: "OBD-II stream"
+    detail: "30 steps × 8 signals"
+    branch: "telemetry"
+  - label: "Conv1D ×2"
+    detail: "k=5, k=3"
+    branch: "telemetry"
+  - label: "BiGRU + attention"
+    detail: "128 units, 2 layers"
+    branch: "telemetry"
+  - label: "256-d"
+    detail: "embedding"
+    branch: "telemetry"
+  - label: "Fusion MLP"
+    detail: "concatenated 768-d"
+    branch: "fusion"
+  - label: "CORN ordinal head"
+    detail: "K−1 binary thresholds"
+    branch: "fusion"
+  - label: "Health grade"
+    detail: "Normal · Warning · Fault · Critical"
+    branch: "fusion"
+---
+
+## The problem
+
+Engine faults announce themselves in two completely different languages.
+
+The OBD-II port speaks in numbers — RPM, coolant temperature, engine load, manifold pressure, intake air temperature, throttle position, vehicle speed, catalyst temperature. Clean, structured, sampled on a fixed clock. But it only reports what the ECU was designed to measure. A worn belt, a rod knock, a failing bearing: none of these raise a diagnostic trouble code until something downstream breaks.
+
+The engine's sound carries exactly that missing information — and a mechanic uses it every day. It is also messy, non-stationary, and buried under road noise, wind and whatever else the microphone picks up.
+
+Neither signal alone is sufficient. That is the entire motivation for the thesis.
+
+## Why grading, not classification
+
+Engine health is not a set of unordered categories. `Normal → Warning → Fault → Critical` is a scale, and the cost of an error depends on the distance along it. Predicting *Warning* when the truth is *Critical* is a far worse mistake than predicting *Fault*.
+
+Standard cross-entropy is blind to that. It treats every wrong answer as equally wrong.
+
+So the output head uses **CORN** — Conditional Ordinal Regression for Neural networks — which reframes a K-class ordinal problem as K−1 conditional binary questions: *is the grade at least Warning? at least Fault? at least Critical?* The predictions stay monotonic by construction, and the loss finally understands that the classes have an order.
+
+Quadratic weighted kappa, not raw accuracy, became the metric I actually watched, for the same reason.
+
+## The audio branch — MSDA-Net
+
+Engine faults live at different time scales simultaneously. A misfire is a sharp transient. A worn bearing is a sustained broadband change. A belt squeal is a narrow, persistent frequency band. A single convolution kernel size can only see one of those well.
+
+MSDA-Net runs **three kernel widths in parallel — k ∈ \{3, 7, 15\}** — through each of three encoder blocks, so short transients and long textures are captured in the same forward pass. Squeeze-and-excitation gates recalibrate the channels afterwards.
+
+Two attention stages follow, and the order matters:
+
+- **Frequency attention** first, deciding *which mel bands* carry the fault evidence for this sample.
+- **Temporal self-attention** (8 heads) second, deciding *when* in the three-second window the evidence appears.
+
+Pooling concatenates global average and global max — average for sustained textures, max for transients — into a 512-dimensional embedding.
+
+On a held-out test set this reaches **96.7% accuracy, MCC 0.899, AUC 0.991**, and — the result I care most about — **F1 = 1.00 on the Critical class**, which has only 193 samples. The rarest and most consequential grade is the one it never misses.
+
+## The result that actually mattered
+
+The telemetry branch scored 99.86% accuracy on a random split. That number is worthless, and finding out why was the most useful thing I did all year.
+
+A random split over driving sessions puts the *same driver* in both training and test. Every person has a throttle signature — how they accelerate, how they hold RPM, how they idle. A BiGRU with attention is more than capable of learning "this is Driver 1" and using it as a shortcut to the label.
+
+So I re-ran the evaluation with **held-out drivers**: entire drivers absent from training, k-fold across driver identity.
+
+Accuracy fell to **93.3% ± 4.9%**, macro-F1 to 0.858.
+
+That 6.5-point drop is the honest measurement of how much of the original score was engine understanding and how much was driver memorisation. It is the number reported on this page, and the number in the thesis. The fusion model's 99.94% is on the same-driver split and inherits the same optimism — it is documented, but it is not a claim about the real world.
+
+The class distribution compounds this: Normal 2,736 / Warning 5,920 / Fault 4,264 / **Critical 193**. With 1.5% of samples in the most important class, aggregate accuracy is close to meaningless. Per-class F1 and QWK are the only figures worth reading.
+
+## What I built
+
+- **MSDA-Net** end to end — multi-scale encoder blocks, SE gating, the two-stage attention stack, the pooling strategy.
+- **The CORN ordinal head** and its loss, replacing the categorical cross-entropy the branch started with.
+- **The audio preprocessing pipeline** — segmentation, log-Mel transformation, augmentation (time/frequency masking, noise injection) to survive real recording conditions.
+- **The fusion stage** — frozen-encoder embedding extraction for both modalities, alignment, and the fusion MLP.
+- **The cross-driver evaluation protocol**, plus the fitting diagnostics that made the generalisation gap visible in the first place.
+- **Grad-CAM over the spectrograms**, to check the model was attending to plausible frequency bands rather than recording artefacts.
+
+## What I learned
+
+**The evaluation protocol is part of the model.** A number is meaningless without the split that produced it. I could have submitted 99.86% and nobody would have questioned it — the model would still have been broken.
+
+**Ordinal structure is free accuracy, if you use it.** Switching to CORN cost about twenty lines and improved every distance-sensitive metric, because the loss finally matched the problem.
+
+**Imbalance decides your metrics before you do.** With 193 Critical samples out of 13,113, accuracy is a headline that hides the only failure mode anyone cares about.
+
+**Fusion is not automatically better.** Concatenating embeddings improved the aggregate score, but the gain came almost entirely from the branch that was already overfitting. Establishing honest unimodal baselines first is what let me see that.

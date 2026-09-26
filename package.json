@@ -1,0 +1,33 @@
+{
+  "name": "tareq-sujat-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "sync": "astro sync",
+    "fonts": "node scripts/collect-fonts.mjs",
+    "og": "node scripts/generate-og.mjs",
+    "build:full": "astro build && node scripts/generate-og.mjs && astro build"
+  },
+  "dependencies": {
+    "astro": "^7.2.6"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/mdx": "^7.0.8",
+    "@astrojs/sitemap": "^3.7.3",
+    "@fontsource-variable/geist": "^5.2.9",
+    "@fontsource-variable/geist-mono": "^5.2.9",
+    "@fontsource/instrument-serif": "^5.2.9",
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3"
+  }
+}

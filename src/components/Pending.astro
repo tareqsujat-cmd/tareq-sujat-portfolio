@@ -1,0 +1,36 @@
+---
+/**
+ * Renders a fact that has not been verified yet.
+ *
+ * Placeholders are marked in the content with a `TODO_CONFIRM` prefix. Rather
+ * than printing that token into a live page — or, worse, inventing a plausible
+ * value — this renders a visibly provisional chip carrying the question that
+ * still needs answering. It reads as deliberate on a deployed site and is
+ * impossible to miss when reviewing.
+ */
+
+interface Props {
+  value?: string | null;
+  /** Shown when `value` carries no question of its own. */
+  fallback?: string;
+  class?: string;
+}
+
+const { value, fallback = "pending confirmation", class: className = "" } = Astro.props;
+
+const question = (value ?? "")
+  .replace(/^TODO_CONFIRM\s*[—:-]?\s*/i, "")
+  .replace(/TODO_CONFIRM\s*[—:-]?\s*/gi, "")
+  .trim();
+---
+
+<span
+  class:list={[
+    "inline-flex items-center gap-1.5 rounded-sm border border-dashed border-rule-strong px-2 py-1 align-middle font-mono text-[0.6875rem] leading-snug text-ink-faint",
+    className,
+  ]}
+  title={question || fallback}
+>
+  <span class="inline-block h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true"></span>
+  {question || fallback}
+</span>

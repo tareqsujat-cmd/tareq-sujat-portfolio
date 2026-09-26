@@ -1,0 +1,173 @@
+---
+import "~/styles/global.css";
+import { site } from "~/data/site";
+import Header from "~/components/Header.astro";
+import Footer from "~/components/Footer.astro";
+import SiteBackdrop from "~/components/SiteBackdrop.astro";
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Absolute or root-relative path to the social image for this page. */
+  image?: string;
+  /** Rendered into <head> as-is. Used for per-page JSON-LD. */
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
+  /** Suppresses the "| Tareq Sujat" suffix for the home page. */
+  bareTitle?: boolean;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = site.description,
+  image = site.ogImage,
+  structuredData,
+  bareTitle = false,
+  noindex = false,
+} = Astro.props;
+
+const pageTitle = bareTitle ? title : `${title} — ${site.name}`;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url);
+const socialImage = new URL(image, Astro.site ?? site.url);
+
+const person = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: site.name,
+  url: site.url,
+  email: `mailto:${site.email.primary}`,
+  jobTitle: "Computer Science and Engineering undergraduate",
+  description: site.summary,
+  affiliation: {
+    "@type": "CollegeOrUniversity",
+    name: "BRAC University",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Dhaka",
+      addressCountry: "BD",
+    },
+  },
+  knowsAbout: [
+    "Multimodal machine learning",
+    "Deep learning",
+    "Audio signal processing",
+    "Neuroimaging",
+    "Computer vision",
+    "Web engineering",
+  ],
+  sameAs: [site.links.github, site.links.linkedin, site.links.researchgate],
+};
+
+const jsonLd = structuredData
+  ? [person, ...(Array.isArray(structuredData) ? structuredData : [structuredData])]
+  : person;
+---
+
+<!doctype html>
+<html lang={site.locale} data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:image" content={socialImage.href} />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage.href} />
+
+    <meta name="author" content={site.name} />
+    <meta name="theme-color" content="#f7f5f1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#050507" media="(prefers-color-scheme: dark)" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    {/* Only the two faces used above the fold are preloaded. */}
+    <link
+      rel="preload"
+      href="/fonts/geist-variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/instrument-serif-400.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    {/*
+      Runs before first paint.
+
+      1. Stamps the theme so there is no flash of the wrong palette.
+      2. Arms the scroll-reveal system. Only below-the-fold content is gated on
+         this — the hero animates with pure CSS regardless. The failsafe timer
+         disarms it again if the reveal module never boots (blocked script,
+         parse error, hostile network), so no content can be stranded invisible.
+    */}
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+
+        try {
+          // Dark is the site's art direction — the prism field only exists
+          // against black. An explicit choice by the visitor always wins.
+          var stored = localStorage.getItem("theme");
+          root.dataset.theme = stored === "light" ? "light" : "dark";
+        } catch (e) {
+          root.dataset.theme = "dark";
+        }
+
+        root.classList.add("js", "reveals-armed");
+
+        var failsafe = window.setTimeout(function () {
+          root.classList.remove("reveals-armed");
+        }, 2500);
+
+        window.__revealsBooted = function () {
+          window.clearTimeout(failsafe);
+        };
+      })();
+    </script>
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+  </head>
+
+  <body class="min-h-screen antialiased">
+    <SiteBackdrop />
+
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-sm focus:bg-ink focus:px-4 focus:py-2.5 focus:font-mono focus:text-xs focus:tracking-wider focus:text-paper focus:uppercase"
+    >
+      Skip to content
+    </a>
+
+    <Header />
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <Footer />
+
+    <script>
+      import { initSite } from "~/lib/ui";
+      initSite();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,137 @@
+---
+/**
+ * ORB STILL
+ * ────────────────────────────────────────────────────────────────────────────
+ * A static rendering of the orbital cage, in pure CSS.
+ *
+ * Two jobs:
+ *   1. The fallback when WebGL is unavailable, blocked, or the context is lost.
+ *      SiteBackdrop only paints it once the shader is known to have failed, so
+ *      its blurs never land on the critical path.
+ *   2. The backdrop for the social cards, which are screenshots and therefore
+ *      cannot run a shader at all.
+ *
+ * It is a suggestion of the live version rather than a copy of it: a glowing
+ * core, a bloom, and three elliptical ribbon rings at fixed angles. Colours
+ * come from the same --orb-* tokens the shader reads, so the two can never
+ * drift apart.
+ */
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+---
+
+<div class:list={["orb", className]} aria-hidden="true" data-orb-still>
+  <div class="orb__haze"></div>
+  <div class="orb__ring orb__ring--a"></div>
+  <div class="orb__ring orb__ring--b"></div>
+  <div class="orb__ring orb__ring--c"></div>
+  <div class="orb__core"></div>
+</div>
+
+<style>
+  .orb {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  /* The assembly, anchored right of centre to keep the text column clear. */
+  .orb__haze,
+  .orb__ring,
+  .orb__core {
+    position: absolute;
+    left: 74%;
+    top: 52%;
+    translate: -50% -50%;
+  }
+
+  .orb__haze {
+    width: 62vmin;
+    height: 62vmin;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      rgb(var(--orb-haze) / 0.95) 0%,
+      rgb(var(--orb-haze) / 0.5) 42%,
+      transparent 78%
+    );
+  }
+
+  .orb__core {
+    width: 15vmin;
+    height: 15vmin;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      rgb(var(--orb-core) / 1) 0%,
+      rgb(var(--orb-ring) / 0.85) 46%,
+      rgb(var(--orb-ring) / 0) 82%
+    );
+    filter: blur(3px);
+  }
+
+  .orb__ring {
+    width: 34vmin;
+    height: 34vmin;
+    border-radius: 50%;
+    border: 0.9vmin solid transparent;
+    /* A glossy band: bright where the light catches it, dark on the far side. */
+    background:
+      linear-gradient(var(--orb-angle, 105deg),
+        rgb(var(--orb-ring) / 0.15) 0%,
+        rgb(var(--orb-core) / 0.9) 26%,
+        rgb(var(--orb-ring) / 0.85) 48%,
+        rgb(var(--orb-ring) / 0.2) 72%,
+        rgb(var(--orb-ring) / 0.55) 100%)
+      border-box;
+    -webkit-mask:
+      linear-gradient(#000 0 0) padding-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) padding-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    filter: blur(0.35vmin);
+  }
+
+  /* Three rings at different tilts read as a cage without any 3D. */
+  .orb__ring--a {
+    --orb-angle: 100deg;
+    rotate: -14deg;
+    scale: 1 0.26;
+  }
+
+  .orb__ring--b {
+    --orb-angle: 20deg;
+    rotate: 62deg;
+    scale: 1 0.34;
+    opacity: 0.82;
+  }
+
+  .orb__ring--c {
+    --orb-angle: 200deg;
+    rotate: -68deg;
+    scale: 1 0.2;
+    opacity: 0.7;
+  }
+
+  @media (max-width: 1023px) {
+    .orb__haze,
+    .orb__ring,
+    .orb__core {
+      left: 78%;
+      top: 26%;
+    }
+
+    .orb__haze {
+      width: 78vmin;
+      height: 78vmin;
+    }
+  }
+</style>

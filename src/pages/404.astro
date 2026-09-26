@@ -1,0 +1,21 @@
+---
+import Base from "~/layouts/Base.astro";
+import Button from "~/components/Button.astro";
+---
+
+<Base title="Page not found" noindex>
+  <div class="shell flex min-h-[60vh] flex-col justify-center py-20">
+    <p class="label mb-6">Error 404</p>
+    <h1 class="max-w-2xl text-balance font-display text-display">
+      This route returned no signal.
+    </h1>
+    <p class="mt-6 max-w-lg text-lede text-ink-muted">
+      The page you asked for does not exist — or it moved. The work is all still
+      here.
+    </p>
+    <div class="mt-9 flex flex-wrap gap-3">
+      <Button href="/" variant="primary">Back to home</Button>
+      <Button href="/work" variant="secondary">See the work</Button>
+    </div>
+  </div>
+</Base>

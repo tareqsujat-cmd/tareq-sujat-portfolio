@@ -1,0 +1,141 @@
+---
+import OrbStill from "~/components/OrbStill.astro";
+
+/**
+ * The site's background: a live orbital cage, fixed behind everything.
+ *
+ * Two layers, in order of preference:
+ *   1. A WebGL fragment shader (lib/orb-field.ts) — a raymarched glowing core
+ *      wrapped in tumbling ribbon rings, reactive to pointer and scroll.
+ *   2. A static CSS orb underneath it, which is what you see if WebGL is
+ *      unavailable, blocked, or the context is lost mid-session.
+ *
+ * The fallback is NOT rendered eagerly: its blurs cost real rasterisation time
+ * on the critical path for a layer most visitors never see. It is painted only
+ * once we know the shader cannot run — until then the backdrop is simply the
+ * page's own near-black, which is what the orb sits on anyway.
+ *
+ * Hidden entirely in light mode: this is emitted light and needs darkness.
+ */
+---
+
+<div class="backdrop" aria-hidden="true" data-backdrop>
+  <!-- Fallback: painted only when the shader is unavailable. -->
+  <div class="backdrop__css" data-backdrop-fallback>
+    <OrbStill />
+  </div>
+
+  <canvas class="backdrop__gl" data-backdrop-gl></canvas>
+</div>
+
+<script>
+  import { createOrbField } from "~/lib/orb-field";
+
+  const root = document.querySelector<HTMLElement>("[data-backdrop]");
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-backdrop-gl]");
+
+  /**
+   * Compiling the shader and rendering a full-viewport frame competes directly
+   * with the critical render path — starting it eagerly cost ~2.5s of LCP.
+   * The static caustic is already on screen, so there is nothing to wait for
+   * visually; we hand the main thread back until the page has painted and gone
+   * idle, then swap the live field in underneath the content.
+   */
+  function boot() {
+    if (!root || !canvas) return;
+    if (root.dataset.gl) return; // already resolved
+
+    const field = createOrbField(canvas);
+
+    if (!field) {
+      // No WebGL, or software-only rendering — paint the static caustic.
+      root.dataset.gl = "off";
+      return;
+    }
+
+    root.dataset.gl = "on";
+    window.addEventListener("themechange", (event) => {
+      const theme = (event as CustomEvent<{ theme: string }>).detail?.theme;
+      field.setTheme(theme !== "light");
+    });
+  }
+
+  function schedule() {
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(boot, { timeout: 1800 });
+    } else {
+      setTimeout(boot, 240);
+    }
+  }
+
+  if (document.readyState === "complete") schedule();
+  else window.addEventListener("load", schedule, { once: true });
+</script>
+
+<style>
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+    background-color: var(--paper);
+    opacity: var(--prism-strength, 0.82);
+    /* Light mode is paper — nothing to emit against. */
+    display: none;
+  }
+
+  :global([data-theme="dark"]) .backdrop {
+    display: block;
+  }
+
+  /* ── WebGL layer ─────────────────────────────────────────────────────── */
+
+  .backdrop__gl {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+  }
+
+  .backdrop[data-gl="on"] .backdrop__gl {
+    display: block;
+  }
+
+  /* A lost context flips this back to the static caustic. */
+  .backdrop__gl[data-failed="true"] {
+    display: none !important;
+  }
+
+  .backdrop:has(.backdrop__gl[data-failed='true']) .backdrop__css {
+    display: block !important;
+  }
+
+  /* ── CSS fallback wrapper ───────────────────────────────────────────── */
+
+  /*
+    Hidden by default so the still orb's blurs never rasterise on the critical
+    path. Revealed only once the shader is confirmed unavailable.
+
+    The still orb is OrbStill.astro, shared with the social cards, so there is
+    exactly one definition of what it looks like.
+  */
+  .backdrop__css {
+    position: absolute;
+    inset: 0;
+    display: none;
+  }
+
+  .backdrop[data-gl="off"] .backdrop__css {
+    display: block;
+  }
+
+  /* The shader still renders a single composed frame under reduced motion;
+     only genuinely hostile display modes drop it entirely. */
+  @media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+    .backdrop {
+      display: none !important;
+    }
+  }
+</style>

@@ -1,0 +1,21 @@
+---
+import Base from "~/layouts/Base.astro";
+import Hero from "~/components/Hero.astro";
+import Work from "~/components/sections/Work.astro";
+import Research from "~/components/sections/Research.astro";
+import Approach from "~/components/sections/Approach.astro";
+import Stack from "~/components/sections/Stack.astro";
+import Education from "~/components/sections/Education.astro";
+import Contact from "~/components/sections/Contact.astro";
+import { site } from "~/data/site";
+---
+
+<Base title={`${site.name} — Multimodal ML & Software Engineering`} bareTitle>
+  <Hero />
+  <Work />
+  <Research />
+  <Approach />
+  <Stack />
+  <Education />
+  <Contact />
+</Base>

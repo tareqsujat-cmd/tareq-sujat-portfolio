@@ -1,0 +1,363 @@
+---
+import { getCollection, render } from "astro:content";
+import type { GetStaticPaths } from "astro";
+import Base from "~/layouts/Base.astro";
+import Pipeline from "~/components/Pipeline.astro";
+import MetricGrid from "~/components/MetricGrid.astro";
+import Button from "~/components/Button.astro";
+import Pending from "~/components/Pending.astro";
+import { isPending, partitionPending } from "~/lib/pending";
+import { site } from "~/data/site";
+
+export const getStaticPaths = (async () => {
+  const projects = await getCollection("projects", ({ data }) => !data.draft);
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}) satisfies GetStaticPaths;
+
+const { project } = Astro.props;
+const { data } = project;
+const { Content } = await render(project);
+
+// Cycle through the same tier so "next" always lands on comparable work.
+const siblings = (await getCollection("projects", ({ data: d }) => !d.draft))
+  .filter((p) => p.data.tier === data.tier)
+  .sort((a, b) => a.data.order - b.data.order);
+
+const position = siblings.findIndex((p) => p.id === project.id);
+const next = siblings[(position + 1) % siblings.length];
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  name: data.title,
+  description: data.summary,
+  author: { "@type": "Person", name: site.name },
+  programmingLanguage: data.stack,
+  ...(data.links.github ? { codeRepository: data.links.github } : {}),
+  ...(data.links.live ? { url: data.links.live } : {}),
+};
+
+const collaborators = partitionPending(data.collaborators);
+const rolePending = isPending(data.role);
+const supervisorPending = isPending(data.supervisor);
+
+const externalLinks = [
+  data.links.github && { label: "Source", href: data.links.github },
+  data.links.live && { label: "Live site", href: data.links.live },
+  data.links.paper && { label: "Paper", href: data.links.paper },
+  data.links.demo && { label: "Demo", href: data.links.demo },
+].filter(Boolean) as { label: string; href: string }[];
+---
+
+<Base
+  title={data.title}
+  description={data.summary}
+  image={`/og/${project.id}.png`}
+  structuredData={structuredData}
+>
+  <article>
+    {/* ── Header ─────────────────────────────────────────────────────── */}
+    <header class="border-b border-rule pt-12 pb-14 sm:pt-16 sm:pb-20">
+      <div class="shell">
+        <nav aria-label="Breadcrumb" class="mb-10">
+          <a href="/#work" class="label hover:text-accent-ink">
+            <span aria-hidden="true">←</span> Selected work
+          </a>
+        </nav>
+
+        <p class="label mb-6" data-enter>{data.kicker} · {data.period}</p>
+
+        <h1
+          class="max-w-4xl text-balance font-display text-display"
+          data-enter-mask
+          style="--enter-delay:60ms"
+        >
+          {data.title}
+        </h1>
+
+        <p
+          class="mt-7 max-w-2xl text-lede text-ink-muted"
+          data-enter
+          style="--enter-delay:140ms"
+        >
+          {data.lede}
+        </p>
+
+        {
+          externalLinks.length > 0 && (
+            <div
+              class="mt-9 flex flex-wrap items-center gap-3"
+              data-enter
+              style="--enter-delay:220ms"
+            >
+              {externalLinks.map((link, i) => (
+                <Button
+                  href={link.href}
+                  variant={i === 0 ? "primary" : "secondary"}
+                  external
+                >
+                  {link.label}
+                </Button>
+              ))}
+            </div>
+          )
+        }
+
+        {
+          data.note && (
+            <p
+              class="mt-9 max-w-2xl rounded-sm border border-dashed border-rule-strong bg-paper-raised px-4 py-3 text-[0.8125rem] leading-relaxed text-ink-muted"
+              data-enter
+            >
+              <span class="label mr-2 text-accent-ink">Note</span>
+              {data.note}
+            </p>
+          )
+        }
+      </div>
+    </header>
+
+    {/* ── Fact rail ──────────────────────────────────────────────────── */}
+    <section aria-label="Project details" class="border-b border-rule py-10">
+      <div class="shell">
+        <dl class="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="sm:col-span-2 lg:col-span-1">
+            <dt class="label mb-3">My role</dt>
+            <dd class="text-sm leading-relaxed text-ink-muted">
+              {rolePending ? <Pending value={data.role} /> : data.role}
+            </dd>
+          </div>
+
+          <div>
+            <dt class="label mb-3">Stack</dt>
+            <dd>
+              <ul class="flex flex-wrap gap-x-2.5 gap-y-1">
+                {data.stack.map((tech) => (
+                  <li class="font-mono text-[0.75rem] text-ink-muted">{tech}</li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+
+          <div>
+            <dt class="label mb-3">Domains</dt>
+            <dd>
+              <ul class="flex flex-wrap gap-x-2.5 gap-y-1">
+                {data.domains.map((domain) => (
+                  <li class="text-[0.75rem] text-ink-muted">{domain}</li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+
+          {
+            (data.collaborators.length > 0 || data.supervisor) && (
+              <div>
+                <dt class="label mb-3">Team</dt>
+                <dd class="text-sm leading-relaxed text-ink-muted">
+                  {collaborators.confirmed.join(", ")}
+
+                  {collaborators.pending.map((entry) => (
+                    <span class="mt-1.5 block">
+                      <Pending value={entry} />
+                    </span>
+                  ))}
+
+                  {data.supervisor && (
+                    <span class="mt-1.5 block text-ink-faint">
+                      {supervisorPending ? (
+                        <Pending value={data.supervisor} fallback="supervisor name" />
+                      ) : (
+                        `Supervisor: ${data.supervisor}`
+                      )}
+                    </span>
+                  )}
+                </dd>
+              </div>
+            )
+          }
+        </dl>
+      </div>
+    </section>
+
+    {/* ── Architecture ───────────────────────────────────────────────── */}
+    {
+      data.pipeline.length > 0 && (
+        <section aria-labelledby="architecture" class="border-b border-rule py-14 sm:py-20">
+          <div class="shell">
+            <h2 id="architecture" class="section-marker label mb-8" data-reveal>
+              <span class="text-accent-ink">Fig. 1</span>
+              <span>Architecture</span>
+            </h2>
+            <div data-reveal>
+              <Pipeline stages={data.pipeline} />
+            </div>
+          </div>
+        </section>
+      )
+    }
+
+    {/* ── Results ────────────────────────────────────────────────────── */}
+    {
+      data.metrics.length > 0 && (
+        <section aria-labelledby="results" class="border-b border-rule py-14 sm:py-20">
+          <div class="shell">
+            <h2 id="results" class="section-marker label mb-3" data-reveal>
+              <span class="text-accent-ink">Fig. 2</span>
+              <span>Results</span>
+            </h2>
+            <p class="mb-8 max-w-2xl text-sm text-ink-faint" data-reveal>
+              Every figure is reported with the evaluation protocol that produced
+              it. The marked metric is the one that best represents
+              generalisation — not necessarily the highest.
+            </p>
+            <MetricGrid metrics={data.metrics} />
+          </div>
+        </section>
+      )
+    }
+
+    {/* ── Narrative ──────────────────────────────────────────────────── */}
+    <div class="py-14 sm:py-20">
+      <div class="shell-prose prose-case">
+        <Content />
+      </div>
+    </div>
+
+    {/* ── Next ───────────────────────────────────────────────────────── */}
+    {
+      next && next.id !== project.id && (
+        <nav aria-label="Next project" class="border-t border-rule">
+          <a href={`/work/${next.id}`} class="group block py-12 transition-colors sm:py-16">
+            <div class="shell">
+              <p class="label mb-4">Next</p>
+              <p class="font-display text-display transition-colors duration-300 group-hover:text-accent-ink">
+                {next.data.title}
+                <span
+                  class="ml-3 inline-block transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:translate-x-1"
+                  aria-hidden="true"
+                >
+                  →
+                </span>
+              </p>
+            </div>
+          </a>
+        </nav>
+      )
+    }
+  </article>
+</Base>
+
+<style is:global>
+  /*
+    Typography for the case-study narrative. Scoped to .prose-case rather than
+    applied globally so the rest of the site keeps its own rhythm.
+  */
+  .prose-case > * + * {
+    margin-top: 1.5rem;
+  }
+
+  .prose-case h2 {
+    font-family: var(--font-display);
+    font-size: var(--text-title);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .prose-case h2:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .prose-case h3 {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-top: 2.5rem;
+  }
+
+  .prose-case p {
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    color: var(--ink-muted);
+  }
+
+  .prose-case strong {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .prose-case em {
+    font-style: italic;
+  }
+
+  .prose-case a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--rule-strong);
+    text-underline-offset: 3px;
+    transition: text-decoration-color 0.2s var(--ease-out-expo);
+  }
+
+  .prose-case a:hover {
+    text-decoration-color: var(--accent);
+  }
+
+  .prose-case ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .prose-case li {
+    position: relative;
+    padding-left: 1.375rem;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    color: var(--ink-muted);
+  }
+
+  .prose-case li::before {
+    content: "";
+    position: absolute;
+    left: 0.25rem;
+    top: 0.7em;
+    width: 4px;
+    height: 1px;
+    background-color: var(--accent);
+  }
+
+  .prose-case code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    background-color: var(--paper-sunken);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.1em 0.35em;
+    color: var(--ink);
+  }
+
+  .prose-case pre {
+    background-color: var(--paper-sunken) !important;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1rem 1.125rem;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+
+  .prose-case pre code {
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+</style>

@@ -1,0 +1,125 @@
+---
+/**
+ * Renders a project's architecture as a left-to-right flow, grouped into
+ * parallel branches that converge.
+ *
+ * The point is legibility at two depths: someone skimming reads the branch
+ * labels and the last box, someone technical reads the detail lines. It is
+ * plain flex layout rather than SVG so it reflows on narrow screens instead of
+ * scaling into illegibility.
+ */
+
+interface Stage {
+  label: string;
+  detail?: string;
+  branch?: string;
+}
+
+interface Props {
+  stages: Stage[];
+  compact?: boolean;
+  class?: string;
+}
+
+const { stages, compact = false, class: className = "" } = Astro.props;
+
+// Preserve source order of branches.
+const branchOrder: string[] = [];
+const grouped = new Map<string, Stage[]>();
+
+for (const stage of stages) {
+  const key = stage.branch ?? "_";
+  if (!grouped.has(key)) {
+    grouped.set(key, []);
+    branchOrder.push(key);
+  }
+  grouped.get(key)!.push(stage);
+}
+
+const isBranched = branchOrder.length > 1;
+
+/** Branch accent colours map onto the same signal tokens the hero canvas uses. */
+const branchColor: Record<string, string> = {
+  audio: "var(--signal-a)",
+  telemetry: "var(--signal-b)",
+  mri: "var(--signal-a)",
+  tabular: "var(--signal-b)",
+  fusion: "var(--ink)",
+};
+---
+
+<div class:list={["not-prose", className]}>
+  {
+    branchOrder.map((branch, branchIndex) => {
+      const branchStages = grouped.get(branch)!;
+      const isFusion = branch === "fusion";
+      const color = branchColor[branch] ?? "var(--ink-faint)";
+
+      return (
+        <div>
+          {isBranched && isFusion && (
+            <div class="my-3 flex items-center gap-3 pl-1" aria-hidden="true">
+              <span class="font-mono text-sm leading-none text-ink-faint">↓</span>
+              <span class="label">converge</span>
+              <span class="h-px flex-1 bg-rule" />
+            </div>
+          )}
+
+          <div
+            class:list={[
+              "flex flex-col gap-2 sm:flex-row sm:items-stretch",
+              isBranched && !isFusion && branchIndex > 0 && "mt-3",
+            ]}
+          >
+            {isBranched && (
+              <div class="flex shrink-0 items-center sm:w-24 sm:items-start sm:pt-3">
+                <span
+                  class="label border-l-2 pl-2"
+                  style={`border-color:${color};color:${color}`}
+                >
+                  {branch}
+                </span>
+              </div>
+            )}
+
+            <ol class="flex min-w-0 flex-1 flex-wrap items-stretch gap-y-2">
+              {branchStages.map((stage, i) => (
+                <li class="flex min-w-0 items-stretch">
+                  {i > 0 && (
+                    <span
+                      class="flex items-center px-1.5 font-mono text-[0.6875rem] text-ink-faint"
+                      aria-hidden="true"
+                    >
+                      →
+                    </span>
+                  )}
+                  <div
+                    class:list={[
+                      "flex min-w-0 flex-col justify-center rounded-sm border border-rule bg-paper-raised",
+                      compact ? "px-2.5 py-1.5" : "px-3 py-2.5",
+                    ]}
+                  >
+                    <span
+                      class:list={[
+                        "truncate font-mono font-medium text-ink",
+                        compact ? "text-[0.6875rem]" : "text-xs",
+                      ]}
+                    >
+                      {stage.label}
+                    </span>
+                    {!compact && stage.detail && (
+                      <span class="mt-0.5 truncate text-[0.6875rem] leading-snug text-ink-faint">
+                        {stage.detail}
+                      </span>
+                    )}
+                  </div>
+
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      );
+    })
+  }
+</div>

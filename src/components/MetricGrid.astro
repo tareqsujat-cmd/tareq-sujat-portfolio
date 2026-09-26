@@ -1,0 +1,67 @@
+---
+/**
+ * The results scorecard.
+ *
+ * Every metric carries the protocol that produced it, and the headline is the
+ * number that best represents real-world generalisation — which is not always
+ * the largest one. Caveats are rendered at the same visual weight as the value
+ * rather than tucked into a footnote, because that is the entire point.
+ */
+
+interface Metric {
+  label: string;
+  value: string;
+  protocol?: string;
+  caveat?: string;
+  headline: boolean;
+}
+
+interface Props {
+  metrics: Metric[];
+}
+
+const { metrics } = Astro.props;
+---
+
+<div class="grid gap-4 sm:grid-cols-2">
+  {
+    metrics.map((metric) => (
+      <div
+        class:list={[
+          "flex flex-col rounded-sm border p-5",
+          metric.headline
+            ? "border-accent/40 bg-accent-wash"
+            : "border-rule bg-paper-raised",
+        ]}
+        data-reveal
+      >
+        <div class="mb-3 flex items-center gap-2">
+          {metric.headline && (
+            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+          )}
+          <span
+            class:list={["label", metric.headline && "text-accent-ink"]}
+          >
+            {metric.label}
+          </span>
+        </div>
+
+        <p class="font-display text-[clamp(1.75rem,1.4rem+1.4vw,2.5rem)] leading-none tabular-nums text-ink">
+          {metric.value}
+        </p>
+
+        {metric.protocol && (
+          <p class="mt-2.5 font-mono text-[0.6875rem] leading-relaxed text-ink-faint">
+            {metric.protocol}
+          </p>
+        )}
+
+        {metric.caveat && (
+          <p class="mt-4 border-t border-rule pt-3.5 text-[0.8125rem] leading-relaxed text-ink-muted">
+            {metric.caveat}
+          </p>
+        )}
+      </div>
+    ))
+  }
+</div>
